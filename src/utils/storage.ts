@@ -65,13 +65,25 @@ export function updateStatsFromSession(session: PracticeSession): StoredStats {
   stats.lastTimerMode = config.timerMode;
   stats.lastCustomTimerSeconds = config.customTimerSeconds ?? 15;
 
-  if (config.type === 'multiplication' && config.table != null) {
-    stats.lastTable = config.table;
-    const existing = stats.tableStats[config.table] ?? { practiced: 0, wrong: 0 };
-    stats.tableStats[config.table] = {
-      practiced: existing.practiced + total,
-      wrong: existing.wrong + wrong,
-    };
+  if (config.type === 'multiplication') {
+    if (config.tables && config.tables.length > 0) {
+      stats.lastTables = config.tables;
+      stats.lastTable = config.tables[0];
+    } else if (config.table != null) {
+      stats.lastTables = [config.table];
+      stats.lastTable = config.table;
+    }
+
+    answers.forEach((ans) => {
+      const qTable = ans.question.table;
+      if (qTable != null) {
+        const existing = stats.tableStats[qTable] ?? { practiced: 0, wrong: 0 };
+        stats.tableStats[qTable] = {
+          practiced: existing.practiced + 1,
+          wrong: existing.wrong + (ans.correct ? 0 : 1),
+        };
+      }
+    });
   }
 
   saveStats(stats);

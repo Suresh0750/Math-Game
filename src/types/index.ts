@@ -14,6 +14,7 @@ export interface Question {
 export interface PracticeConfig {
   type: PracticeType;
   table?: number;
+  tables?: number[];
   rangeStart: number;
   rangeEnd: number;
   order: QuestionOrder;
@@ -53,11 +54,13 @@ export interface StoredStats {
   totalSessions: number;
   lastPracticeType: PracticeType | null;
   lastTable: number | null;
+  lastTables?: number[];
   lastRangeStart: number;
   lastRangeEnd: number;
   lastOrder: QuestionOrder;
   lastTimerMode: TimerMode;
   lastCustomTimerSeconds: number;
+  markedConfig?: PracticeConfig | null;
 }
 
 export type AppRoute =
@@ -80,11 +83,13 @@ export const DEFAULT_STATS: StoredStats = {
   totalSessions: 0,
   lastPracticeType: null,
   lastTable: null,
+  lastTables: [],
   lastRangeStart: 1,
   lastRangeEnd: 10,
   lastOrder: 'random',
   lastTimerMode: 'none',
   lastCustomTimerSeconds: 15,
+  markedConfig: null,
 };
 
 export const PRESET_TABLES = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];

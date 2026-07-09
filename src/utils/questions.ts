@@ -2,17 +2,19 @@ import type { PracticeConfig, Question } from '../types';
 import { shuffle } from './helpers';
 
 function buildMultiplicationQuestions(config: PracticeConfig): Question[] {
-  const table = config.table ?? 2;
+  const tables = config.tables?.length ? config.tables : [config.table ?? 2];
   const questions: Question[] = [];
 
-  for (let i = config.rangeStart; i <= config.rangeEnd; i++) {
-    questions.push({
-      id: `mul-${table}-${i}`,
-      display: `${table} × ${i}`,
-      correctAnswer: table * i,
-      table,
-      base: i,
-    });
+  for (const table of tables) {
+    for (let i = config.rangeStart; i <= config.rangeEnd; i++) {
+      questions.push({
+        id: `mul-${table}-${i}`,
+        display: `${table} × ${i}`,
+        correctAnswer: table * i,
+        table,
+        base: i,
+      });
+    }
   }
 
   return questions;
@@ -98,7 +100,10 @@ export function getPracticeTitle(config: PracticeConfig): string {
 
   switch (config.type) {
     case 'multiplication':
-      return `Table ${config.table} (${config.rangeStart}–${config.rangeEnd})`;
+      if (config.tables && config.tables.length > 1) {
+        return `Tables: ${config.tables.join(', ')} (${config.rangeStart}–${config.rangeEnd})`;
+      }
+      return `Table ${config.table ?? 2} (${config.rangeStart}–${config.rangeEnd})`;
     case 'squares':
       return `Squares (${config.rangeStart}–${config.rangeEnd})`;
     case 'cubes':

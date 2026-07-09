@@ -19,11 +19,15 @@ export function SetupPage() {
   const practiceType = (type ?? 'multiplication') as PracticeType;
   const isMultiplication = practiceType === 'multiplication';
 
-  const [table, setTable] = useState(stats.lastTable ?? 8);
+  const [selectedTables, setSelectedTables] = useState<number[]>(() => {
+    if (stats.lastTables?.length) return stats.lastTables;
+    return stats.lastTable ? [stats.lastTable] : [8];
+  });
   const [customTable, setCustomTable] = useState('');
-  const [customTableMode, setCustomTableMode] = useState(
-    !PRESET_TABLES.includes(stats.lastTable ?? 8)
-  );
+  const [customTableMode, setCustomTableMode] = useState(() => {
+    const lastT = stats.lastTable ?? 8;
+    return !PRESET_TABLES.includes(lastT);
+  });
   const [rangeStart, setRangeStart] = useState(stats.lastRangeStart);
   const [rangeEnd, setRangeEnd] = useState(stats.lastRangeEnd);
   const [customRange, setCustomRange] = useState(false);
@@ -32,13 +36,14 @@ export function SetupPage() {
   const [customTimerSeconds, setCustomTimerSeconds] = useState(stats.lastCustomTimerSeconds);
 
   const presets = RANGE_PRESETS[practiceType === 'multiplication' ? 'multiplication' : practiceType];
-  const selectedTable = customTableMode ? Number(customTable) || table : table;
-  const questionCount = rangeEnd - rangeStart + 1;
+  const selectedTable = customTableMode ? Number(customTable) || 8 : selectedTables[0];
+  const totalQuestions = (rangeEnd - rangeStart + 1) * (customTableMode ? 1 : selectedTables.length);
 
   const handleStart = () => {
     const config = {
       type: practiceType,
-      table: isMultiplication ? selectedTable : undefined,
+      table: isMultiplication && customTableMode ? selectedTable : undefined,
+      tables: isMultiplication && !customTableMode ? selectedTables : undefined,
       rangeStart,
       rangeEnd,
       order,
@@ -48,7 +53,8 @@ export function SetupPage() {
 
     savePreferences({
       lastPracticeType: practiceType,
-      lastTable: isMultiplication ? selectedTable : null,
+      lastTable: isMultiplication ? (customTableMode ? selectedTable : selectedTables[0]) : null,
+      lastTables: isMultiplication && !customTableMode ? selectedTables : [],
       lastRangeStart: rangeStart,
       lastRangeEnd: rangeEnd,
       lastOrder: order,
@@ -67,28 +73,45 @@ export function SetupPage() {
       <div className="flex flex-1 flex-col gap-8">
         {isMultiplication && (
           <div>
-            <h3 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">
-              Select Table
-            </h3>
+            <div className="flex justify-between items-center mb-3">
+              <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
+                Select Table(s)
+              </h3>
+              {!customTableMode && (
+                <span className="text-xs text-indigo-500 font-medium">
+                  Select multiple to practice them together!
+                </span>
+              )}
+            </div>
             <div className="flex flex-wrap gap-2">
-              {PRESET_TABLES.map((t) => (
-                <button
-                  key={t}
-                  type="button"
-                  onClick={() => {
-                    setCustomTableMode(false);
-                    setTable(t);
-                  }}
-                  className={[
-                    'rounded-xl px-4 py-2 text-sm font-semibold transition-all',
-                    !customTableMode && table === t
-                      ? 'bg-indigo-600 text-white shadow-sm'
-                      : 'bg-white text-slate-600 border border-slate-200 hover:border-indigo-200',
-                  ].join(' ')}
-                >
-                  Table {t}
-                </button>
-              ))}
+              {PRESET_TABLES.map((t) => {
+                const isSelected = !customTableMode && selectedTables.includes(t);
+                return (
+                  <button
+                    key={t}
+                    type="button"
+                    onClick={() => {
+                      setCustomTableMode(false);
+                      setSelectedTables((prev) => {
+                        if (prev.includes(t)) {
+                          if (prev.length === 1) return prev; // Keep at least one selected
+                          return prev.filter((x) => x !== t);
+                        } else {
+                          return [...prev, t];
+                        }
+                      });
+                    }}
+                    className={[
+                      'rounded-xl px-4 py-2 text-sm font-semibold transition-all',
+                      isSelected
+                        ? 'bg-indigo-600 text-white shadow-sm'
+                        : 'bg-white text-slate-600 border border-slate-200 hover:border-indigo-200',
+                    ].join(' ')}
+                  >
+                    Table {t}
+                  </button>
+                );
+              })}
               <button
                 type="button"
                 onClick={() => setCustomTableMode(true)}
@@ -143,16 +166,23 @@ export function SetupPage() {
           <p className="mb-4 text-center text-sm text-slate-600">
             Ready to practice{' '}
             <span className="font-bold text-slate-900">
-              {questionCount} question{questionCount !== 1 ? 's' : ''}
+              {totalQuestions} question{totalQuestions !== 1 ? 's' : ''}
             </span>
             {isMultiplication && (
               <>
                 {' '}
-                from Table <span className="font-bold text-indigo-600">{selectedTable}</span>
+                from Table{customTableMode ? '' : selectedTables.length > 1 ? 's' : ''}{' '}
+                <span className="font-bold text-indigo-600">
+                  {customTableMode ? selectedTable : selectedTables.join(', ')}
+                </span>
               </>
             )}
           </p>
-          <Button fullWidth onClick={handleStart} disabled={questionCount <= 0 || (isMultiplication && selectedTable < 1)}>
+          <Button
+            fullWidth
+            onClick={handleStart}
+            disabled={totalQuestions <= 0 || (isMultiplication && customTableMode && selectedTable < 1)}
+          >
             Start Practice →
           </Button>
         </div>

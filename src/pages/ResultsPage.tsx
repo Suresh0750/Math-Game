@@ -1,21 +1,48 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Layout } from '../components/Layout';
 import { Button } from '../components/Button';
 import { usePractice } from '../context/PracticeContext';
 import { formatAccuracy, formatDuration } from '../utils/helpers';
 import { getPracticeTitle } from '../utils/questions';
-import { getWrongAnswers, updateStatsFromSession } from '../utils/storage';
+import { getWrongAnswers, updateStatsFromSession, loadStats, savePreferences } from '../utils/storage';
 
 export function ResultsPage() {
   const navigate = useNavigate();
   const { completedSession, startSession } = usePractice();
+
+  const stats = loadStats();
+  const initialConfig = completedSession?.config;
+
+  const [isMarked, setIsMarked] = useState(() => {
+    if (!stats.markedConfig || !initialConfig) return false;
+    const m = stats.markedConfig;
+    return (
+      m.type === initialConfig.type &&
+      m.rangeStart === initialConfig.rangeStart &&
+      m.rangeEnd === initialConfig.rangeEnd &&
+      (initialConfig.type === 'multiplication'
+        ? JSON.stringify(m.tables ?? [m.table]) === JSON.stringify(initialConfig.tables ?? [initialConfig.table])
+        : true)
+    );
+  });
 
   useEffect(() => {
     if (completedSession) {
       updateStatsFromSession(completedSession);
     }
   }, [completedSession]);
+
+  const handleMarkConfig = () => {
+    if (!initialConfig) return;
+    if (isMarked) {
+      savePreferences({ markedConfig: null });
+      setIsMarked(false);
+    } else {
+      savePreferences({ markedConfig: initialConfig });
+      setIsMarked(true);
+    }
+  };
 
   if (!completedSession) {
     navigate('/');
@@ -109,6 +136,9 @@ export function ResultsPage() {
         </div>
 
         <div className="mt-auto space-y-3">
+          <Button variant="secondary" fullWidth onClick={handleMarkConfig}>
+            {isMarked ? '📌 Marked for Quick Practice' : '📌 Mark Table & Range for Practice'}
+          </Button>
           {wrongAnswers.length > 0 && (
             <Button fullWidth onClick={handleReviewWrong}>
               📝 Review Wrong Answers ({wrongAnswers.length})

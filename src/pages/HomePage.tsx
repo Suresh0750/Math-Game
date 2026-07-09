@@ -4,9 +4,12 @@ import { SelectCard } from '../components/SelectCard';
 import { Button } from '../components/Button';
 import { loadStats } from '../utils/storage';
 import { formatDuration } from '../utils/helpers';
+import { getPracticeTitle } from '../utils/questions';
+import { usePractice } from '../context/PracticeContext';
 
 export function HomePage() {
   const navigate = useNavigate();
+  const { startSession } = usePractice();
   const stats = loadStats();
 
   const quickResume =
@@ -15,6 +18,13 @@ export function HomePage() {
       : stats.lastPracticeType
         ? stats.lastPracticeType.charAt(0).toUpperCase() + stats.lastPracticeType.slice(1)
         : null;
+
+  const handlePracticeMarked = () => {
+    if (stats.markedConfig) {
+      startSession(stats.markedConfig);
+      navigate('/practice');
+    }
+  };
 
   return (
     <Layout
@@ -39,6 +49,27 @@ export function HomePage() {
                 </div>
                 <div className="text-xs text-slate-500">Total Time</div>
               </div>
+            </div>
+          </div>
+        )}
+
+        {stats.markedConfig && (
+          <div className="rounded-2xl border border-dashed border-indigo-200 bg-indigo-50/30 p-4 shadow-sm">
+            <div className="flex flex-col gap-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-sm font-bold text-slate-800 flex items-center gap-1.5">
+                    🎯 Marked Table & Range
+                  </h3>
+                  <p className="text-xs text-indigo-600 mt-1 font-medium">
+                    {getPracticeTitle(stats.markedConfig)}
+                  </p>
+                </div>
+                <span className="text-xl">📌</span>
+              </div>
+              <Button fullWidth onClick={handlePracticeMarked} className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold">
+                Practice Marked Table
+              </Button>
             </div>
           </div>
         )}

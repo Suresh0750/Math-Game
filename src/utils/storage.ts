@@ -1,4 +1,4 @@
-import type { AnswerRecord, PracticeConfig, PracticeSession, StoredStats } from '../types';
+import type { AnswerRecord, PracticeSession, StoredStats } from '../types';
 import { DEFAULT_STATS } from '../types';
 import { formatAccuracy } from './helpers';
 import { generateQuestions } from './questions';

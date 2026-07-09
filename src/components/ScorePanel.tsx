@@ -10,7 +10,7 @@ interface ScorePanelProps {
 export function ScorePanel({ correct, wrong, remaining, total }: ScorePanelProps) {
   const answered = correct + wrong;
   const accuracy = formatAccuracy(correct, answered);
-
+  console.log('total',total)
   return (
     <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
       <StatBox label="Correct" value={correct} color="text-emerald-600" />

@@ -2,7 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { Layout } from '../components/Layout';
 import { SelectCard } from '../components/SelectCard';
 import { Button } from '../components/Button';
-import { loadStats } from '../utils/storage';
+import { loadStats, getWeakQuestionsCount } from '../utils/storage';
 import { formatDuration } from '../utils/helpers';
 import { getPracticeTitle } from '../utils/questions';
 import { usePractice } from '../context/PracticeContext';
@@ -11,6 +11,7 @@ export function HomePage() {
   const navigate = useNavigate();
   const { startSession } = usePractice();
   const stats = loadStats();
+  const weakQuestionsCount = getWeakQuestionsCount();
 
   const quickResume =
     stats.lastPracticeType === 'multiplication' && stats.lastTable
@@ -78,6 +79,15 @@ export function HomePage() {
           <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
             Choose Practice Type
           </h2>
+
+          {weakQuestionsCount > 0 && (
+            <SelectCard
+              icon="⭐"
+              label="Practice Weak Questions"
+              description={`${weakQuestionsCount} question${weakQuestionsCount !== 1 ? 's' : ''} to master`}
+              onClick={() => navigate('/setup/weak')}
+            />
+          )}
 
           <SelectCard
             icon="×"

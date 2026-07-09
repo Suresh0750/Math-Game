@@ -1,4 +1,4 @@
-export type PracticeType = 'multiplication' | 'squares' | 'cubes';
+export type PracticeType = 'multiplication' | 'squares' | 'cubes' | 'weak';
 export type QuestionOrder = 'sequential' | 'random';
 export type TimerMode = 'none' | '5' | '10' | 'custom';
 
@@ -9,6 +9,13 @@ export interface Question {
   table?: number;
   base?: number;
   exponent?: 2 | 3;
+}
+
+export interface WeakQuestion {
+  question: Question;
+  practiceType: 'multiplication' | 'squares' | 'cubes';
+  wrongCount: number;
+  addedAt: number;
 }
 
 export interface PracticeConfig {
@@ -61,6 +68,7 @@ export interface StoredStats {
   lastTimerMode: TimerMode;
   lastCustomTimerSeconds: number;
   markedConfig?: PracticeConfig | null;
+  weakQuestions?: WeakQuestion[];
 }
 
 export type AppRoute =
@@ -90,6 +98,7 @@ export const DEFAULT_STATS: StoredStats = {
   lastTimerMode: 'none',
   lastCustomTimerSeconds: 15,
   markedConfig: null,
+  weakQuestions: [],
 };
 
 export const PRESET_TABLES = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
@@ -109,4 +118,5 @@ export const RANGE_PRESETS = {
     { label: '1–10', start: 1, end: 10 },
     { label: '1–20', start: 1, end: 20 },
   ],
+  weak: [],
 };

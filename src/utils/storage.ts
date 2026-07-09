@@ -1,4 +1,4 @@
-import type { AnswerRecord, PracticeSession, StoredStats } from '../types';
+import type { AnswerRecord, PracticeSession, StoredStats, Question, WeakQuestion } from '../types';
 import { DEFAULT_STATS } from '../types';
 import { formatAccuracy } from './helpers';
 import { generateQuestions } from './questions';
@@ -125,4 +125,53 @@ export function getWeakestTable(stats: StoredStats): number | null {
 
 export function getWrongAnswers(session: PracticeSession): AnswerRecord[] {
   return session.answers.filter((a) => !a.correct);
+}
+
+export function markQuestionAsWeak(
+  question: Question,
+  practiceType: 'multiplication' | 'squares' | 'cubes'
+): void {
+  const stats = loadStats();
+  if (!stats.weakQuestions) {
+    stats.weakQuestions = [];
+  }
+
+  const existingIndex = stats.weakQuestions.findIndex(
+    (wq) => wq.question.id === question.id
+  );
+
+  if (existingIndex >= 0) {
+    // Already marked, increment wrong count
+    stats.weakQuestions[existingIndex].wrongCount += 1;
+  } else {
+    // New weak question
+    const newWeakQuestion: WeakQuestion = {
+      question,
+      practiceType,
+      wrongCount: 1,
+      addedAt: Date.now(),
+    };
+    stats.weakQuestions.push(newWeakQuestion);
+  }
+
+  saveStats(stats);
+}
+
+export function unmarkWeakQuestion(questionId: string): void {
+  const stats = loadStats();
+  if (!stats.weakQuestions) return;
+
+  stats.weakQuestions = stats.weakQuestions.filter(
+    (wq) => wq.question.id !== questionId
+  );
+  saveStats(stats);
+}
+
+export function getWeakQuestions(): WeakQuestion[] {
+  const stats = loadStats();
+  return stats.weakQuestions ?? [];
+}
+
+export function getWeakQuestionsCount(): number {
+  return getWeakQuestions().length;
 }

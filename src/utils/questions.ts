@@ -71,6 +71,9 @@ export function generateQuestions(config: PracticeConfig): Question[] {
     case 'cubes':
       questions = buildCubeQuestions(config);
       break;
+    case 'weak':
+      // Weak practice should always use customQuestions
+      return [];
   }
 
   if (config.order === 'random') {
@@ -108,5 +111,7 @@ export function getPracticeTitle(config: PracticeConfig): string {
       return `Squares (${config.rangeStart}–${config.rangeEnd})`;
     case 'cubes':
       return `Cubes (${config.rangeStart}–${config.rangeEnd})`;
+    case 'weak':
+      return 'Practice Weak Questions ⭐';
   }
 }

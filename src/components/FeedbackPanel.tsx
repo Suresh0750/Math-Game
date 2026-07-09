@@ -1,13 +1,36 @@
+import { useState } from 'react';
 import type { AnswerRecord } from '../types';
 import { Button } from './Button';
 
 interface FeedbackPanelProps {
   record: AnswerRecord;
   onContinue: () => void;
+  practiceType?: 'multiplication' | 'squares' | 'cubes' | 'weak';
+  onMarkWeak?: (questionId: string) => void;
+  isMarkedAsWeak?: boolean;
 }
 
-export function FeedbackPanel({ record, onContinue }: FeedbackPanelProps) {
+export function FeedbackPanel({
+  record,
+  onContinue,
+  practiceType,
+  onMarkWeak,
+  isMarkedAsWeak = false,
+}: FeedbackPanelProps) {
   const { correct, userAnswer, question, timeUp } = record;
+  const [marked, setMarked] = useState(isMarkedAsWeak);
+
+  const handleMarkWeak = () => {
+    if (!marked && onMarkWeak) {
+      onMarkWeak(question.id);
+      setMarked(true);
+    } else if (marked && onMarkWeak) {
+      // For now, we can unmark by calling the same function
+      // The parent will handle toggling
+      onMarkWeak(question.id);
+      setMarked(false);
+    }
+  };
 
   return (
     <div
@@ -47,9 +70,24 @@ export function FeedbackPanel({ record, onContinue }: FeedbackPanelProps) {
         </div>
       )}
 
-      <Button onClick={onContinue} fullWidth>
-        {correct ? 'Next' : 'Continue'} <span className="text-xs opacity-70">(Enter)</span>
-      </Button>
+      <div className="flex gap-2">
+        <Button onClick={onContinue} fullWidth>
+          {correct ? 'Next' : 'Continue'} <span className="text-xs opacity-70">(Enter)</span>
+        </Button>
+        {!correct && practiceType && onMarkWeak && (
+          <button
+            onClick={handleMarkWeak}
+            className={`flex items-center justify-center rounded-lg px-4 py-2 font-semibold transition transform hover:scale-110 ${
+              marked
+                ? 'bg-amber-200 text-amber-900 shadow-md'
+                : 'bg-gray-200 text-gray-600 hover:bg-amber-100'
+            }`}
+            title={marked ? 'Remove from weak' : 'Mark as weak'}
+          >
+            ⭐
+          </button>
+        )}
+      </div>
     </div>
   );
 }

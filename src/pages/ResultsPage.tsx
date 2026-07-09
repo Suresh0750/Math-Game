@@ -5,7 +5,16 @@ import { Button } from '../components/Button';
 import { usePractice } from '../context/PracticeContext';
 import { formatAccuracy, formatDuration } from '../utils/helpers';
 import { getPracticeTitle } from '../utils/questions';
-import { getWrongAnswers, updateStatsFromSession, loadStats, savePreferences } from '../utils/storage';
+import {
+  getWrongAnswers,
+  updateStatsFromSession,
+  loadStats,
+  savePreferences,
+  markQuestionAsWeak,
+  unmarkWeakQuestion,
+  getWeakQuestions,
+} from '../utils/storage';
+import type { Question } from '../types';
 
 export function ResultsPage() {
   const navigate = useNavigate();
@@ -13,6 +22,8 @@ export function ResultsPage() {
 
   const stats = loadStats();
   const initialConfig = completedSession?.config;
+  const weakQuestions = getWeakQuestions();
+  const weakQuestionIds = new Set(weakQuestions.map((wq) => wq.question.id));
 
   const [isMarked, setIsMarked] = useState(() => {
     if (!stats.markedConfig || !initialConfig) return false;
@@ -27,11 +38,34 @@ export function ResultsPage() {
     );
   });
 
+  const [markedAsWeak, setMarkedAsWeak] = useState<Set<string>>(() => {
+    return new Set(completedSession?.answers
+      .filter((a) => !a.correct && weakQuestionIds.has(a.question.id))
+      .map((a) => a.question.id) || []);
+  });
+
   useEffect(() => {
     if (completedSession) {
       updateStatsFromSession(completedSession);
     }
   }, [completedSession]);
+
+  const handleToggleWeak = (question: Question) => {
+    if (markedAsWeak.has(question.id)) {
+      // Unmark as weak
+      unmarkWeakQuestion(question.id);
+      setMarkedAsWeak((prev) => {
+        const next = new Set(prev);
+        next.delete(question.id);
+        return next;
+      });
+    } else {
+      // Mark as weak
+      const practiceType = completedSession?.config.type as 'multiplication' | 'squares' | 'cubes';
+      markQuestionAsWeak(question, practiceType);
+      setMarkedAsWeak((prev) => new Set([...prev, question.id]));
+    }
+  };
 
   const handleMarkConfig = () => {
     if (!initialConfig) return;
@@ -111,16 +145,19 @@ export function ResultsPage() {
           <div className="max-h-60 overflow-y-auto space-y-2 pr-1">
             {answers.map((record, idx) => {
               const { question, userAnswer, correct, timeUp } = record;
+              const isWeak = markedAsWeak.has(question.id);
               return (
                 <div
                   key={idx}
-                  className={`flex items-center justify-between rounded-xl px-4 py-3 border ${
+                  className={`flex items-center justify-between rounded-xl px-4 py-3 border transition ${
                     correct
                       ? 'bg-emerald-50/50 border-emerald-100'
-                      : 'bg-red-50/50 border-red-100'
+                      : isWeak
+                        ? 'bg-amber-50/70 border-amber-200'
+                        : 'bg-red-50/50 border-red-100'
                   }`}
                 >
-                  <div className="flex flex-col">
+                  <div className="flex flex-col flex-1">
                     <span className="font-semibold text-slate-700">
                       {question.display} = {question.correctAnswer}
                     </span>
@@ -128,7 +165,20 @@ export function ResultsPage() {
                       Your answer: {timeUp ? 'Time Up ⏱️' : userAnswer ?? '—'}
                     </span>
                   </div>
-                  <span className="text-xl">{correct ? '✅' : '❌'}</span>
+                  <div className="flex items-center gap-2">
+                    {!correct && (
+                      <button
+                        onClick={() => handleToggleWeak(question)}
+                        className={`text-xl transition transform hover:scale-125 ${
+                          isWeak ? 'opacity-100' : 'opacity-30 hover:opacity-60'
+                        }`}
+                        title={isWeak ? 'Remove from weak' : 'Mark as weak'}
+                      >
+                        ⭐
+                      </button>
+                    )}
+                    <span className="text-xl">{correct ? '✅' : '❌'}</span>
+                  </div>
                 </div>
               );
             })}

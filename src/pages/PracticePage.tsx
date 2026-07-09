@@ -10,6 +10,7 @@ import { usePractice } from '../context/PracticeContext';
 import type { AnswerRecord } from '../types';
 import { generateQuestions, getPracticeTitle, getTimerSeconds } from '../utils/questions';
 import { parseAnswer } from '../utils/helpers';
+import { markQuestionAsWeak, unmarkWeakQuestion, getWeakQuestions } from '../utils/storage';
 import { useTimer } from '../hooks/useTimer';
 
 type Phase = 'answering' | 'feedback';
@@ -22,6 +23,10 @@ export function PracticePage() {
   const [inputValue, setInputValue] = useState('');
   const [phase, setPhase] = useState<Phase>('answering');
   const [currentRecord, setCurrentRecord] = useState<AnswerRecord | null>(null);
+  const [markedWeakQuestions, setMarkedWeakQuestions] = useState<Set<string>>(() => {
+    const weakQuestions = getWeakQuestions();
+    return new Set(weakQuestions.map((wq) => wq.question.id));
+  });
   const inputRef = useRef<HTMLInputElement>(null);
   const autoAdvanceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -128,6 +133,28 @@ export function PracticePage() {
   const handleTimeUp = useCallback(() => {
     recordAnswer(null, true);
   }, [recordAnswer]);
+
+  const handleMarkWeak = useCallback(
+    (questionId: string) => {
+      if (markedWeakQuestions.has(questionId)) {
+        // Unmark
+        unmarkWeakQuestion(questionId);
+        setMarkedWeakQuestions((prev) => {
+          const next = new Set(prev);
+          next.delete(questionId);
+          return next;
+        });
+      } else {
+        // Mark
+        const practiceType = session?.config.type as 'multiplication' | 'squares' | 'cubes' | 'weak';
+        if (practiceType && practiceType !== 'weak') {
+          markQuestionAsWeak(currentRecord?.question!, practiceType);
+          setMarkedWeakQuestions((prev) => new Set([...prev, questionId]));
+        }
+      }
+    },
+    [markedWeakQuestions, session, currentRecord]
+  );
 
   const { remaining: timerRemaining, progress, reset: resetTimer } = useTimer(
     timerSeconds,
@@ -264,7 +291,13 @@ export function PracticePage() {
               </div>
             ) : (
               currentRecord && (
-                <FeedbackPanel record={currentRecord} onContinue={goToNext} />
+                <FeedbackPanel
+                  record={currentRecord}
+                  onContinue={goToNext}
+                  practiceType={session.config.type}
+                  onMarkWeak={handleMarkWeak}
+                  isMarkedAsWeak={markedWeakQuestions.has(currentRecord.question.id)}
+                />
               )
             )}
           </div>

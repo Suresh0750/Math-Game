@@ -148,5 +148,7 @@ export function getPracticeTypeLabel(type: PracticeType): string {
       return 'Squares';
     case 'cubes':
       return 'Cubes';
+    case 'weak':
+      return 'Weak Questions';
   }
 }

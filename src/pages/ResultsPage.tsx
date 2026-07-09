@@ -77,6 +77,37 @@ export function ResultsPage() {
           </div>
         )}
 
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <h3 className="mb-4 text-sm font-semibold uppercase tracking-wide text-slate-500">
+            Questions Summary
+          </h3>
+          <div className="max-h-60 overflow-y-auto space-y-2 pr-1">
+            {answers.map((record, idx) => {
+              const { question, userAnswer, correct, timeUp } = record;
+              return (
+                <div
+                  key={idx}
+                  className={`flex items-center justify-between rounded-xl px-4 py-3 border ${
+                    correct
+                      ? 'bg-emerald-50/50 border-emerald-100'
+                      : 'bg-red-50/50 border-red-100'
+                  }`}
+                >
+                  <div className="flex flex-col">
+                    <span className="font-semibold text-slate-700">
+                      {question.display} = {question.correctAnswer}
+                    </span>
+                    <span className="text-xs text-slate-500">
+                      Your answer: {timeUp ? 'Time Up ⏱️' : userAnswer ?? '—'}
+                    </span>
+                  </div>
+                  <span className="text-xl">{correct ? '✅' : '❌'}</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
         <div className="mt-auto space-y-3">
           {wrongAnswers.length > 0 && (
             <Button fullWidth onClick={handleReviewWrong}>

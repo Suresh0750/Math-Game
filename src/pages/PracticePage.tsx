@@ -8,7 +8,7 @@ import { TimerDisplay } from '../components/TimerDisplay';
 import { FeedbackPanel } from '../components/FeedbackPanel';
 import { usePractice } from '../context/PracticeContext';
 import type { AnswerRecord } from '../types';
-import { getPracticeTitle, getTimerSeconds } from '../utils/questions';
+import { generateQuestions, getPracticeTitle, getTimerSeconds } from '../utils/questions';
 import { parseAnswer } from '../utils/helpers';
 import { useTimer } from '../hooks/useTimer';
 
@@ -52,7 +52,35 @@ export function PracticePage() {
 
     const nextIndex = currentIndex + 1;
     if (nextIndex >= questions.length) {
-      finishSession();
+      if (session && session.config.timerMode === 'none') {
+        let newQuestions = generateQuestions(session.config);
+        
+        // Prevent consecutive duplicate questions across cycle boundaries
+        if (
+          session.config.order === 'random' &&
+          newQuestions.length > 1 &&
+          session.questions.length > 0
+        ) {
+          const lastQuestionId = session.questions[session.questions.length - 1].id;
+          let attempts = 0;
+          while (newQuestions[0].id === lastQuestionId && attempts < 10) {
+            newQuestions = generateQuestions(session.config);
+            attempts++;
+          }
+        }
+
+        const updated = {
+          ...session,
+          questions: [...session.questions, ...newQuestions],
+        };
+        updateSession(updated);
+        setCurrentIndex(nextIndex);
+        setPhase('answering');
+        setCurrentRecord(null);
+        setInputValue('');
+      } else {
+        finishSession();
+      }
       return;
     }
 
@@ -60,7 +88,7 @@ export function PracticePage() {
     setPhase('answering');
     setCurrentRecord(null);
     setInputValue('');
-  }, [currentIndex, questions.length, finishSession]);
+  }, [currentIndex, questions.length, finishSession, session, updateSession]);
 
   const recordAnswer = useCallback(
     (userAnswer: number | null, timeUp = false) => {
@@ -120,7 +148,9 @@ export function PracticePage() {
       return;
     }
     if (session.answers.length >= session.questions.length) {
-      finishSession();
+      if (session.config.timerMode !== 'none') {
+        finishSession();
+      }
     }
   }, [session, navigate, finishSession]);
 
@@ -146,6 +176,21 @@ export function PracticePage() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [phase, handleSubmit, goToNext, currentIndex]);
 
+  const handleHome = () => {
+    if (!session) {
+      navigate('/');
+      return;
+    }
+    if (session.answers.length > 0) {
+      if (window.confirm('Would you like to save your practice progress before returning to Home?')) {
+        finishSession();
+        return;
+      }
+    }
+    endSession();
+    navigate('/');
+  };
+
   const handleRestart = () => {
     if (!session) return;
     if (window.confirm('Restart this practice session? Progress will be lost.')) {
@@ -167,10 +212,12 @@ export function PracticePage() {
       subtitle={`Question ${displayIndex} of ${questions.length}`}
     >
       <NavBar
-        onHome={() => navigate('/')}
+        onHome={handleHome}
         showBack={false}
         showRestart
         onRestart={handleRestart}
+        showFinish={session.config.timerMode === 'none'}
+        onFinish={finishSession}
       />
 
       <div className="flex flex-1 flex-col gap-6">

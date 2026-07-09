@@ -4,11 +4,21 @@ interface NavBarProps {
   onHome: () => void;
   onBack?: () => void;
   onRestart?: () => void;
+  onFinish?: () => void;
   showBack?: boolean;
   showRestart?: boolean;
+  showFinish?: boolean;
 }
 
-export function NavBar({ onHome, onBack, onRestart, showBack = true, showRestart = false }: NavBarProps) {
+export function NavBar({
+  onHome,
+  onBack,
+  onRestart,
+  onFinish,
+  showBack = true,
+  showRestart = false,
+  showFinish = false,
+}: NavBarProps) {
   return (
     <nav className="mb-6 flex flex-wrap items-center gap-2">
       {showBack && onBack && (
@@ -19,11 +29,18 @@ export function NavBar({ onHome, onBack, onRestart, showBack = true, showRestart
       <Button variant="ghost" onClick={onHome} className="!px-3 !py-2">
         🏠 Home
       </Button>
-      {showRestart && onRestart && (
-        <Button variant="secondary" onClick={onRestart} className="!px-3 !py-2 ml-auto">
-          ↺ Restart
-        </Button>
-      )}
+      <div className="ml-auto flex gap-2">
+        {showRestart && onRestart && (
+          <Button variant="secondary" onClick={onRestart} className="!px-3 !py-2">
+            ↺ Restart
+          </Button>
+        )}
+        {showFinish && onFinish && (
+          <Button variant="primary" onClick={onFinish} className="!px-3 !py-2">
+            🏁 Finish
+          </Button>
+        )}
+      </div>
     </nav>
   );
 }
